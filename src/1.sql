@@ -1,6 +1,6 @@
 use bel2020;
 
--- Везде pt = parent type, pid = parent_id
+-- Везде pt = parent object type, pid = parent_id - parent object id
 -- Надо ли трэкать источники получения данных?
 
 create table persons(
