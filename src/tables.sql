@@ -17,19 +17,28 @@ drop table if exists address;
 drop table if exists person;
 drop table if exists source;
 
+DROP TYPE IF EXISTS vehicle_type;
+
+CREATE TYPE vehicle_type AS ENUM (
+    'Car',
+    'Motorcycle',
+    'Truck',
+    'Boat'
+);
 
 -- Предполагаю, что объект может иметь несколько источников (например в результате кластеризации).
 -- В свою очередь источник может быть источником для нескольких объектов. Поэтому связывать предполагаю через links
 create table source(
     id bigserial primary key,
-    src varchar(255) not null
+    src text not null,
+    CHECK (length(src) <= 2048)
 );
 
 
 create table person(
     id bigserial primary key,
     -- Полное имя, если не структурировано четко в ФИО
-    name varchar(255),
+    full_name varchar(255),
     -- Фамилия
     last_name varchar(100),
     -- Имя или первая буква
@@ -39,29 +48,33 @@ create table person(
     gender varchar(30),
     birth_date date,
     -- город, деревня и тд
-    origin_place varchar(250),
+    origin_place varchar(255),
+    identity_number varchar(32),
     -- номер с серией, например AB123456
     passport_number varchar(50),
     passport_issue_date date,
     passport_issue_place varchar(255),
+    rank varchar(100),
     -- город, где человек был последний раз замечен
     last_known_location varchar(255),
     source_id bigint,
-    notes varchar(255),
-    
+    notes text,
+
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+    CHECK (length(notes) <= 4096)
 );
 
 
 create table address(
     id bigserial primary key,
+    country varchar(2),
     city varchar(100),
     -- область
     region varchar(100),
     -- Район
-    county varchar(100),
+    district varchar(100),
     -- street address - улица, дом, квартира.
     street varchar(100),
     building varchar(100),
@@ -80,7 +93,7 @@ create table address(
     radius real,
     --spatial index(position),
     source_id bigint,
-    notes varchar(255),
+    notes text,
 
     constraint fk_owner
         foreign key(owner_id)
@@ -88,7 +101,9 @@ create table address(
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(notes) <= 4096)
 );
 
 
@@ -97,6 +112,7 @@ create table property(
     type varchar(50) not null,
     address_id bigint,
     source_id bigint,
+    notes text,
 
     constraint fk_address
         foreign key(address_id)
@@ -104,28 +120,39 @@ create table property(
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(notes) <= 4096)
 );
 
 
 create table vehicle(
     id bigserial primary key,
+
+    type vehicle_type,
     brand varchar(100),
     model varchar(100),
-    licensePlate varchar(10) not null,
+    license_plate varchar(10),
     color varchar(50),
 
     from_date date,
     -- Если по-прежнему используется, то to_date=null
     to_date date,
 
-    productionYear smallint,
-    registrationYear smallint,
+    production_year smallint,
+    registration_year smallint,
 
     vin varchar(50),
+
+    person_id bigint,
     owner_id bigint,
     source_id bigint,
-    notes varchar(255),
+
+    notes text,
+
+    constraint fk_person
+        foreign key(person_id)
+        references person(id),
 
     constraint fk_owner
         foreign key(owner_id)
@@ -133,7 +160,9 @@ create table vehicle(
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(notes) <= 4096)
 );
 
 
@@ -144,6 +173,7 @@ create table organization(
     division varchar(255),
     address_id bigint,
     source_id bigint,
+    notes text,
 
     constraint fk_address
         foreign key(address_id)
@@ -151,7 +181,9 @@ create table organization(
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(notes) <= 4096)
 );
 
 
@@ -166,6 +198,7 @@ create table job(
     from_date date,
     to_date date,
     source_id bigint,
+    notes text,
 
     constraint fk_employee
         foreign key(employee_id)
@@ -177,7 +210,9 @@ create table job(
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(notes) <= 4096)
 );
 
 
@@ -210,7 +245,7 @@ create table relation(
 create table social_network(
     id bigserial primary key,
     owner_id bigint,
-    url varchar(255),
+    url text,
     -- vk, fb, ok ...
     net_name varchar(50) not null,
     -- id внутри сети, обычно часть url
@@ -223,7 +258,9 @@ create table social_network(
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(url) <= 2048)
 );
 
 
@@ -258,7 +295,7 @@ create table email(
     --pt tinyint,
     -- Parent id
     --pid int,
-    email varchar(255) not null,
+    email varchar(254) not null,
     owner_id bigint,
     from_date date,
     -- Если по-прежнему в силе, то to_date=null
@@ -286,14 +323,14 @@ create table media(
     type varchar(50) not null,
     description varchar(1024),
     hash varchar(255),
-    fileName varchar(100),
+    file_name varchar(100),
     url varchar(1024),
     -- Откуда мы этот файл взяли
     original_url varchar(1024),		
     timestamp timestamp,
     owner_id bigint,
     source_id bigint,
-    notes varchar(255),
+    notes text,
 
     constraint fk_owner_id
         foreign key(owner_id)
@@ -301,7 +338,9 @@ create table media(
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(notes) <= 4096)
 );
 
 
@@ -331,18 +370,21 @@ create table incident(
     --pid int,
     type varchar(50) not null,
     name varchar(255),
-    description varchar(4096),
+    description text,
     from_time timestamp,
     to_time timestamp,
     time_precision real,
     position geometry(Point, 4326),
 
     source_id bigint,
-    notes varchar(1024),
+    notes text,
 
     constraint fk_source
         foreign key(source_id)
-            references source(id)
+            references source(id),
+
+    CHECK (length(description) <= 4096),
+    CHECK (length(notes) <= 4096)
 );
 
 
