@@ -114,25 +114,42 @@ create table property(
     CHECK (length(notes) <= 4096)
 );
 
+DROP TYPE IF EXISTS vehicle_type;
+
+CREATE TYPE vehicle_type AS ENUM (
+    'Car',
+    'Motorcycle',
+    'Truck',
+    'Boat'
+);
 
 create table vehicle(
     id bigserial primary key,
+
+    type vehicle_type,
     brand varchar(100),
     model varchar(100),
-    licensePlate varchar(10) not null,
+    license_plate varchar(10),
     color varchar(50),
 
     from_date date,
     -- Если по-прежнему используется, то to_date=null
     to_date date,
 
-    productionYear smallint,
-    registrationYear smallint,
+    production_year smallint,
+    registration_year smallint,
 
     vin varchar(50),
+
+    person_id bigint,
     owner_id bigint,
     source_id bigint,
+
     notes text,
+
+    constraint fk_person
+        foreign key(person_id)
+        references person(id),
 
     constraint fk_owner
         foreign key(owner_id)
