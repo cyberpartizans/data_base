@@ -17,6 +17,14 @@ drop table if exists address;
 drop table if exists person;
 drop table if exists source;
 
+DROP TYPE IF EXISTS vehicle_type;
+
+CREATE TYPE vehicle_type AS ENUM (
+    'Car',
+    'Motorcycle',
+    'Truck',
+    'Boat'
+);
 
 -- Предполагаю, что объект может иметь несколько источников (например в результате кластеризации).
 -- В свою очередь источник может быть источником для нескольких объектов. Поэтому связывать предполагаю через links
@@ -30,7 +38,7 @@ create table source(
 create table person(
     id bigserial primary key,
     -- Полное имя, если не структурировано четко в ФИО
-    full_name text,
+    full_name varchar(255),
     -- Фамилия
     last_name varchar(100),
     -- Имя или первая буква
@@ -41,10 +49,12 @@ create table person(
     birth_date date,
     -- город, деревня и тд
     origin_place varchar(255),
+    identity_number varchar(32),
     -- номер с серией, например AB123456
     passport_number varchar(50),
     passport_issue_date date,
     passport_issue_place varchar(255),
+    rank varchar(100),
     -- город, где человек был последний раз замечен
     last_known_location varchar(255),
     source_id bigint,
@@ -59,11 +69,12 @@ create table person(
 
 create table address(
     id bigserial primary key,
+    country varchar(2),
     city varchar(100),
     -- область
     region varchar(100),
     -- Район
-    county varchar(100),
+    district varchar(100),
     -- street address - улица, дом, квартира.
     street varchar(100),
     building varchar(100),
@@ -114,14 +125,6 @@ create table property(
     CHECK (length(notes) <= 4096)
 );
 
-DROP TYPE IF EXISTS vehicle_type;
-
-CREATE TYPE vehicle_type AS ENUM (
-    'Car',
-    'Motorcycle',
-    'Truck',
-    'Boat'
-);
 
 create table vehicle(
     id bigserial primary key,
