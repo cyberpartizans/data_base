@@ -280,7 +280,7 @@ create table person_incident(
     source_id bigint references source(id),
 );
 
-create table upload(
+create table post(
     id bigserial primary key,
     -- false by default
     finished boolean not null,
@@ -291,10 +291,11 @@ create table upload(
 
 create table file(
     id bigserial primary key,
-    original_name varchar(1024),
     sha256 bytea not null,
     filesize bigint not null,
-    upload_id biging not null references upload(id),
+    mime_type varchar(256),
+    extension varchar(256),
+    post_id bigint not null references post(id),
 
     created timestamp not null default now(),
     updated timestamp,
