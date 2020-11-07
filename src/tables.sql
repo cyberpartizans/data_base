@@ -1,6 +1,9 @@
 -- Везде pt = parent type, pid = parent_id
 -- Надо ли трэкать источники получения данных?
 
+-- This is to enable geometry type
+create extension postgis;
+
 drop table if exists vehicle;
 drop table if exists job;
 drop table if exists property;
